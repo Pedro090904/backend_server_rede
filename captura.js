@@ -1,73 +1,56 @@
-// Passo 1: Importar as classes necessárias da biblioteca 'cap'
-const { Cap, decoders } = require('cap');
+// Usando a biblioteca 'raw-socket' que é 100% JavaScript e mais confiável
+const raw = require('raw-socket');
 
 // --- Variáveis de Configuração ---
-// Lembre-se de alterar estes valores para os da sua máquina
-const SERVER_IP = "192.168.0.14"; // IMPORTANTE: Troque pelo IP do seu computador!
+// Lembre-se de colocar o IP que você encontrou com o ipconfig
+const SERVER_IP = "192.168.0.14"; // IMPORTANTE: Verifique se este ainda é seu IP!
 
 // --- Início do Script ---
-
-// Encontra o primeiro dispositivo de rede disponível com um endereço IP
-const device = Cap.findDevice(SERVER_IP);
-if (!device) {
-    console.error(`Erro: Nenhum dispositivo de rede encontrado para o IP ${SERVER_IP}`);
-    console.error("Verifique se o IP está correto e se você está executando o script com privilégios de administrador.");
-    process.exit(1);
-}
-
-console.log("Iniciando a captura de pacotes...");
+console.log("Iniciando a captura de pacotes com raw-socket...");
 console.log(`Monitorando o servidor no IP: ${SERVER_IP}`);
-console.log(`Escutando no dispositivo: ${device.name} (${device.addresses[0].addr})`);
 console.log("-----------------------------------------");
 
-// Cria uma instância do capturador
-const c = new Cap();
+// Cria um socket de baixo nível para escutar todos os pacotes IP.
+// Esta operação requer privilégios de administrador.
+try {
+    const socket = raw.createSocket({ protocol: raw.Protocol.IP });
 
-// Define o tamanho do buffer que armazenará os pacotes capturados
-const bufSize = 10 * 1024 * 1024; // 10 MB
-const buffer = Buffer.alloc(bufSize);
-
-// Abre o dispositivo para captura em modo promíscuo
-// O filtro 'ip' garante que só pegaremos pacotes IPv4
-c.open(device.name, 'ip', bufSize, buffer);
-
-// Define um listener que será chamado toda vez que um novo pacote chegar
-c.on('packet', (nbytes, trunc) => {
-    // Apenas processa pacotes Ethernet (a camada mais comum)
-    if (decoders.Ethernet.prototype.decode(buffer, 0)) {
-        // A 'cap' nos dá os dados decodificados do cabeçalho IP
-        const ipHeader = decoders.IPV4.prototype.decode(buffer, 14); // O cabeçalho IP começa no byte 14 do frame Ethernet
-
-        // Extrai as informações que precisamos
-        const sourceIp = ipHeader.saddr;
-        const destinationIp = ipHeader.daddr;
-        const packetSize = ipHeader.length; // Tamanho total do pacote IP
+    socket.on('message', (buffer, source) => {
+        // O buffer contém o pacote IP completo.
+        // Vamos extrair as informações diretamente dos bytes do buffer.
         
-        // O protocolo é um número (ex: 6 para TCP, 17 para UDP). Vamos mapeá-lo para um nome.
-        const PROTOCOLS = {
-            1: 'ICMP',
-            6: 'TCP',
-            17: 'UDP',
-        };
-        const protocolName = PROTOCOLS[ipHeader.protocol] || `Protocolo #${ipHeader.protocol}`;
+        // IP de origem: bytes 12 a 15
+        const sourceIp = `${buffer[12]}.${buffer[13]}.${buffer[14]}.${buffer[15]}`;
+        // IP de destino: bytes 16 a 19
+        const destinationIp = `${buffer[16]}.${buffer[17]}.${buffer[18]}.${buffer[19]}`;
+        // Protocolo: byte 9 (6=TCP, 17=UDP, 1=ICMP)
+        const protocolNumber = buffer[9];
+        // Tamanho total do pacote: bytes 2 e 3
+        const packetSize = buffer.readUInt16BE(2);
 
-        // Lógica para identificar tráfego de entrada e saída (idêntica à anterior)
+        // Mapeia o número do protocolo para um nome legível
+        const PROTOCOLS = { 1: 'ICMP', 6: 'TCP', 17: 'UDP' };
+        const protocolName = PROTOCOLS[protocolNumber] || `Protocol #${protocolNumber}`;
+
+        // Lógica para identificar tráfego de entrada e saída do nosso servidor
         if (sourceIp === SERVER_IP || destinationIp === SERVER_IP) {
-            let direction = "";
-            let clientIp = "";
+            const direction = (destinationIp === SERVER_IP) ? "Entrada (IN)" : "Saída (OUT)";
+            const clientIp = (destinationIp === SERVER_IP) ? sourceIp : destinationIp;
 
-            if (destinationIp === SERVER_IP) {
-                direction = "Entrada (IN)";
-                clientIp = sourceIp;
-            } else {
-                direction = "Saída (OUT)";
-                clientIp = destinationIp;
-            }
-
-            // Exibir no console as informações extraídas
             console.log(
                 `[${direction}] Cliente: ${clientIp} | Protocolo: ${protocolName} | Tamanho: ${packetSize} bytes`
             );
         }
-    }
-});
+    });
+
+    // Listener para erros
+    socket.on('error', (error) => {
+        console.error("ERRO NO SOCKET:", error);
+        console.error("--> Verifique se você executou o script como Administrador.");
+        socket.close();
+    });
+
+} catch (e) {
+    console.error("FALHA AO CRIAR O SOCKET:", e);
+    console.error("--> Este erro geralmente acontece se o script não for executado como Administrador.");
+}
