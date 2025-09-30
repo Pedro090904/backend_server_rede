@@ -2,8 +2,8 @@
 from flask import Flask, jsonify
 from flask_cors import CORS # Para permitir que o frontend acesse a API
 
-# Importações que já tínhamos
-from scapy.all import sniff, IP
+# Importações que já tínhamos, com TCP e UDP adicionados
+from scapy.all import sniff, IP, TCP, UDP # <-- MUDANÇA AQUI
 import sys
 import threading
 import time
@@ -13,16 +13,16 @@ from collections import defaultdict, Counter
 SERVER_IP = "172.27.6.48" # Verifique se este ainda é seu IP
 JANELA_DE_TEMPO = 5 # Segundos
 
-# --- Estruturas de Dados Globais ---
-# Dicionário para coletar o tráfego da janela ATUAL
-traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': Counter()})
+# --- ESTRUTURA DE DADOS MODIFICADA ---
+# A lambda agora cria uma estrutura aninhada para os protocolos
+traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': {'in': Counter(), 'out': Counter()}}) # <-- MUDANÇA AQUI
 data_lock = threading.Lock()
 
-# NOVO: Dicionário para armazenar os dados da ÚLTIMA janela completa, para a API servir
+# Dicionário para armazenar os dados da ÚLTIMA janela completa, para a API servir
 last_window_data = {}
 last_window_lock = threading.Lock()
 
-# --- Lógica de Captura e Agregação (sem alterações) ---
+# --- LÓGICA DE CAPTURA ATUALIZADA COM DIREÇÃO E PORTAS ---
 def process_packet(packet):
     global traffic_data
     if packet.haslayer(IP):
@@ -30,17 +30,32 @@ def process_packet(packet):
         source_ip = ip_layer.src
         destination_ip = ip_layer.dst
         packet_size = len(packet)
-        PROTOCOLS = {1: 'ICMP', 6: 'TCP', 17: 'UDP'}
-        protocol_name = PROTOCOLS.get(ip_layer.proto, f"Protocolo #{ip_layer.proto}")
         
         if source_ip == SERVER_IP or destination_ip == SERVER_IP:
             with data_lock:
                 direction = 'in' if destination_ip == SERVER_IP else 'out'
                 client_ip = source_ip if direction == 'in' else destination_ip
-                traffic_data[client_ip][direction] += packet_size
-                traffic_data[client_ip]['protocols'][protocol_name] += packet_size
+                
+                # --- INÍCIO DA NOVA LÓGICA DE PROTOCOLO ---
+                protocol_key = "OUTRO" # Valor padrão
+                
+                if packet.haslayer(TCP):
+                    # A porta do servidor é a de destino (dport) na entrada e a de origem (sport) na saída
+                    server_port = packet[TCP].dport if direction == 'in' else packet[TCP].sport
+                    protocol_key = f"TCP:{server_port}"
+                elif packet.haslayer(UDP):
+                    server_port = packet[UDP].dport if direction == 'in' else packet[UDP].sport
+                    protocol_key = f"UDP:{server_port}"
+                elif ip_layer.proto == 1:
+                    protocol_key = "ICMP"
+                # --- FIM DA NOVA LÓGICA DE PROTOCOLO ---
 
-# --- Lógica do Processador de Janela---
+                # Atualiza o tráfego total de entrada/saída (esta linha não muda)
+                traffic_data[client_ip][direction] += packet_size
+                # Atualiza a contagem do protocolo específico para a direção específica
+                traffic_data[client_ip]['protocols'][direction][protocol_key] += packet_size # <-- MUDANÇA AQUI
+
+# --- LÓGICA DO PROCESSADOR DE JANELA (MODIFICADA para nova estrutura) ---
 def process_and_reset_window():
     global traffic_data, last_window_data
     while True:
@@ -49,24 +64,23 @@ def process_and_reset_window():
         data_to_process = {}
         with data_lock:
             if traffic_data:
-                # Copia os dados para processar e limpa a estrutura de coleta
                 data_to_process = dict(traffic_data)
                 traffic_data.clear()
 
-        # ATUALIZA A VARIÁVEL QUE A API VAI USAR
         with last_window_lock:
-            # Converte os objetos Counter para dicionários normais para o JSON
+            # --- MUDANÇA AQUI para converter os contadores aninhados ---
             for client, data in data_to_process.items():
-                data['protocols'] = dict(data['protocols'])
+                data['protocols']['in'] = dict(data['protocols']['in'])
+                data['protocols']['out'] = dict(data['protocols']['out'])
             last_window_data = data_to_process
 
         # Opcional: imprimir no console para depuração
         print(f"[{time.strftime('%H:%M:%S')}] Janela de dados atualizada com {len(last_window_data)} clientes.")
         sys.stdout.flush()
 
-# --- Configuração da API com Flask ---
+# --- Configuração da API com Flask (sem alterações) ---
 app = Flask(__name__)
-CORS(app) # Habilita o CORS para a aplicação
+CORS(app) 
 
 @app.route('/api/traffic')
 def get_traffic_data():
@@ -75,20 +89,17 @@ def get_traffic_data():
         # Retorna uma cópia dos dados da última janela como resposta JSON
         return jsonify(last_window_data)
 
-# --- Início da Execução ---
+# --- Início da Execução (sem alterações) ---
 if __name__ == "__main__":
-    print("Iniciando o servidor de captura e API...")
+    print("Iniciando o servidor de captura e API (v3 - com portas)...")
     
-    # Inicia o processador de janela em uma thread
     processor_thread = threading.Thread(target=process_and_reset_window, daemon=True)
     processor_thread.start()
     
-    # NOVO: Inicia a captura de pacotes em sua própria thread
     capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter="ip", store=0), daemon=True)
     capture_thread.start()
 
     print(f"Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic")
     print("-----------------------------------------")
     
-    # Inicia o servidor Flask. O 'host="0.0.0.0"' permite que outras máquinas na rede acessem sua API
     app.run(host="0.0.0.0", port=5000)
