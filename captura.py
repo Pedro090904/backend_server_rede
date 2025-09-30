@@ -10,7 +10,7 @@ import time
 from collections import defaultdict, Counter
 
 # --- Variáveis de Configuração ---
-SERVER_IP = "10.63.32.95" # Verifique se este ainda é seu IP
+SERVER_IP = "192.168.0.14" # Verifique se este ainda é seu IP
 JANELA_DE_TEMPO = 5 # Segundos
 
 # --- Estruturas de Dados Globais ---
