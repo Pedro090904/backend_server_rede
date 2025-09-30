@@ -10,7 +10,7 @@ import time
 from collections import defaultdict, Counter
 
 # --- Variáveis de Configuração ---
-SERVER_IP = "192.168.0.14" # Verifique se este ainda é seu IP
+SERVER_IP = "172.27.6.48" # Verifique se este ainda é seu IP
 JANELA_DE_TEMPO = 5 # Segundos
 
 # --- Estruturas de Dados Globais ---
@@ -40,7 +40,7 @@ def process_packet(packet):
                 traffic_data[client_ip][direction] += packet_size
                 traffic_data[client_ip]['protocols'][protocol_name] += packet_size
 
-# --- Lógica do Processador de Janela (MODIFICADA) ---
+# --- Lógica do Processador de Janela---
 def process_and_reset_window():
     global traffic_data, last_window_data
     while True:
