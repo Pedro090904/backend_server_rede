@@ -1,6 +1,6 @@
 # Documentação Backend
 
-## Frameworks importadas relacionadas as API's
+## Frameworks importados relacionadas as API's
 
 from flask import Flask, jsonify 
 from flask_cors import CORS # Para permitir que o frontend acesse a API
@@ -27,5 +27,14 @@ from collections import defaultdict, Counter
    5.1 dafaultdict é um dicionário que já cria valores padrão se a chave não existe
    5.2 Counter conta e armazena os elementos
 
+# Variáveis de configuração 
 
+# --- Variáveis de Configuração ---
+SERVER_IP = "192.168.1.201" # Verifique se este ainda é seu IP
+JANELA_DE_TEMPO = 5 # Segundos
+
+- A variável SERVER_IP define o endereço IP do servidor que o script vai monitorar ou usar como origem, caso o ip seja diferente do verificado, é preciso atualizar a variável
+- A variável JANELA_DE_TEMPO define o intervalo para coletar as estatísticas e agrupar pacotes  
+
+#
 
