@@ -10,7 +10,7 @@ import time
 from collections import defaultdict, Counter
 
 # --- Variáveis de Configuração ---
-SERVER_IP = "192.168.1.201" # Verifique se este ainda é seu IP
+SERVER_IP = "127.0.0.1" # Verifique se este ainda é seu IP
 JANELA_DE_TEMPO = 5 # Segundos
 
 # --- ESTRUTURA DE DADOS MODIFICADA ---
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter="ip", store=0), daemon=True)
     capture_thread.start()
 
-    print(f"Servidor API rodando! Acesse http://192.168.1.201:5000/api/traffic")
+    print(f"Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic")
     print("-----------------------------------------")
     
     app.run(host="0.0.0.0", port=5000)
