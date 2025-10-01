@@ -1,6 +1,6 @@
 # Documentação Backend
 
-## Frameworks importados relacionadas as API's
+# 1. Frameworks importados relacionadas as API's
 
 from flask import Flask, jsonify 
 from flask_cors import CORS # Para permitir que o frontend acesse a API
@@ -9,7 +9,7 @@ from flask_cors import CORS # Para permitir que o frontend acesse a API
 2. jsonify converte os dados em python para JSON
 3. flask_cors integra as API's com o frontend sem bloqueio do navegador e evitando erros de CORS
 
-# Bibliotecas importadas
+# 2. Bibliotecas importadas
 
 from scapy.all import sniff, IP, TCP, UDP # <-- MUDANÇA AQUI
 import sys
@@ -27,14 +27,14 @@ from collections import defaultdict, Counter
    5.1 dafaultdict é um dicionário que já cria valores padrão se a chave não existe
    5.2 Counter conta e armazena os elementos
 
-# Variáveis de configuração 
+# 3. Variáveis de configuração 
 SERVER_IP = "192.168.1.201" # Verifique se este ainda é seu IP
 JANELA_DE_TEMPO = 5 # Segundos
 
 - A variável SERVER_IP define o endereço IP do servidor que o script vai monitorar ou usar como origem, caso o ip seja diferente do verificado, é preciso atualizar a variável
 - A variável JANELA_DE_TEMPO define o intervalo para coletar as estatísticas e agrupar pacotes  
 
-#Estrutura de dados 
+# 4. Estrutura de dados 
 
 traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': {'in': Counter(), 'out': Counter()}}) # <-- MUDANÇA AQUI
 data_lock = threading.Lock()
