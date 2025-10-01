@@ -28,13 +28,21 @@ from collections import defaultdict, Counter
    5.2 Counter conta e armazena os elementos
 
 # Variáveis de configuração 
-
-# --- Variáveis de Configuração ---
 SERVER_IP = "192.168.1.201" # Verifique se este ainda é seu IP
 JANELA_DE_TEMPO = 5 # Segundos
 
 - A variável SERVER_IP define o endereço IP do servidor que o script vai monitorar ou usar como origem, caso o ip seja diferente do verificado, é preciso atualizar a variável
 - A variável JANELA_DE_TEMPO define o intervalo para coletar as estatísticas e agrupar pacotes  
+
+#Estrutura de dados 
+
+traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': {'in': Counter(), 'out': Counter()}}) # <-- MUDANÇA AQUI
+data_lock = threading.Lock()
+
+1. A variável traffic_data cria um dicionário com um valor pré-definido pela função lambda, ela se refere ao ip monitorado
+   1.1  A chave "in" do dicionário se refere aos dados de entrada
+   1.2  A chave "out" do dicionário se refere aos dados de saída
+2. A variável data_lock faz com que o tráfego sendo atualizado muitas vezes, garante que apenas uma thread por vez mexa na estrutura, evitando inconsistências.
 
 #
 
