@@ -64,7 +64,61 @@
 
 # 6. Lógica de captura atualiza com direção e portas
 
+def process_packet(packet):
+    global traffic_data
+    if packet.haslayer(IP):
+        ip_layer = packet.getlayer(IP)
+        source_ip = ip_layer.src
+        destination_ip = ip_layer.dst
+        packet_size = len(packet)
+        
+        if source_ip == SERVER_IP or destination_ip == SERVER_IP:
+            with data_lock:
+                direction = 'in' if destination_ip == SERVER_IP else 'out'
+                client_ip = source_ip if direction == 'in' else destination_ip
+                
+                # --- INÍCIO DA NOVA LÓGICA DE PROTOCOLO ---
+                protocol_key = "OUTRO" # Valor padrão
+                
+                if packet.haslayer(TCP):
+                    # A porta do servidor é a de destino (dport) na entrada e a de origem (sport) na saída
+                    server_port = packet[TCP].dport if direction == 'in' else packet[TCP].sport
+                    protocol_key = f"TCP:{server_port}"
+                elif packet.haslayer(UDP):
+                    server_port = packet[UDP].dport if direction == 'in' else packet[UDP].sport
+                    protocol_key = f"UDP:{server_port}"
+                elif ip_layer.proto == 1:
+                    protocol_key = "ICMP"
+                # --- FIM DA NOVA LÓGICA DE PROTOCOLO ---
 
+                # Atualiza o tráfego total de entrada/saída (esta linha não muda)
+                traffic_data[client_ip][direction] += packet_size
+                # Atualiza a contagem do protocolo específico para a direção específica
+                traffic_data[client_ip]['protocols'][direction][protocol_key] += packet_size # <-- MUDANÇA AQUI
+
+1. a linha de codigo ``` def process_packet(packet): ``` define a função que processa individualmente cada pacote capturado.
+2. A linha de código ``` global traffic_data ``` interaje com a variável global para armazenar os dados de tráfego de forma agregada.
+3. A linha de código``` global  if packet.haslayer(IP): ``` garante que o pacote capturado possui uma camada IP, ignorando outros tipos de pacote.
+   3.1 As variáveis ``` ip_layer, source_ip, destination_ip, packet_size ``` vão receber respectivamente os dados referentes a camada de IP, os endereços de origem e destino, e o tamanho total do pacote em bytes.
+4. A linha de código ``` if source_ip == SERVER_IP or destination_ip == SERVER_IP: ``` filtra os pacotes por relevância onde ó ira permitir o processamento de pacotes que têm o servidor como origem ou destino.
+5. A linha de código ``` direction = 'in' if destination_ip == SERVER_IP else 'out' ``` define a direção do pacote, *in* se entrar *out* se sair.
+6. A linha de código ``` client_ip = source_ip if direction == 'in' else destination_ip ``` Identifica o endereço IP do cliente com base na direção do tráfego.
+7. A variável ``` protocol_key = "OUTRO" ``` define um valor padrão para tráfego que não se encaixa nos critérios seguintes.
+8. Agora são defindos filtros que definem o tipo  do pacote capturado, onde se o pacote cair no filtro indentifica-se a porta (dport ou sport) e cria-se a chave, vejamos:
+
+               if packet.haslayer(TCP):
+                  # A porta do servidor é a de destino (dport) na entrada e a de origem (sport) na saída
+                  server_port = packet[TCP].dport if direction == 'in' else packet[TCP].sport
+                  protocol_key = f"TCP:{server_port}"
+               elif packet.haslayer(UDP):
+                  server_port = packet[UDP].dport if direction == 'in' else packet[UDP].sport
+                  protocol_key = f"UDP:{server_port}"
+               elif ip_layer.proto == 1:
+                  protocol_key = "ICMP"
+
+No caso apenas o ultimo filtro (``` elif ip_layer.proto == 1: ```) se comparta de maneira diferente indentificando os pacotes ICMP através do seu número de protocolo na camada IP.
+9. A linha de código ``` traffic_data[client_ip][direction] += packet_size ``` Atualiza a contagem geral de bytes para aquele cliente, naquela direção.
+10. A linha de código  ``` traffic_data[client_ip]['protocols'][direction][protocol_key] += packet_size ``` faz a mesma que o de cima só que para um para o protocolo específico identificado.
 
 # 7. Lógica do processador de janela (modificada para a nova estrutura)
 
@@ -132,7 +186,7 @@ def get_traffic_data():
 
 1. if "--ports" in sys.argv é o script qu verifica o argumento **--ports**
 
-``` ```
+
 
 
     if ports_to_monitor:
