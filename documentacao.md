@@ -184,10 +184,10 @@ def get_traffic_data():
             print("AVISO: Argumento --ports usado incorretamente. Monitorando todas as portas.")
             ports_to_monitor = []
 
-1. if "--ports" in sys.argv é o script qu verifica o argumento **--ports**
-
-
-
+1. O if "--ports" in sys.argv é o script que verifica o argumento **--ports**.
+   1.1 O --ports for encontrado, a linha encontra sua posição na lista e pega o argumento seguinte, que é a lista de portas.
+2. A variável **sys.argv** é um lista que contém todos os argumentos passados ao executar o script.
+3. O if ports_str.lower() != "all": nessa parte se o usuário não digitar "all" depois de --ports, o código assume que ele forneceu uma lista de portas.
 
     if ports_to_monitor:
         # Se temos portas, cria o filtro específico
@@ -196,19 +196,32 @@ def get_traffic_data():
     else:
         # Se não temos portas, cria o filtro geral (apenas pelo IP)
         bpf_filter = f"host {SERVER_IP}"
-    # --- FIM DA LÓGICA CORINGA ---
+
+4. O if ports_to_monitor: e bpf_filter = f"..." Verifica as portas e o código constrói o filtro BPF (bpf_filter).
+   4.1 Se a lista de portas não estiver vazia, um filtro específico é criado.
+   4.2 Se a lista estiver vazia (se --ports não foi usado, ou se foi usado incorretamente), o filtro BPF será apenas host 192.168.1.1, monitorando todas as portas do servidor.
 
     print("Iniciando o servidor de captura e API (v5 - filtro dinâmico)...")
     
     processor_thread = threading.Thread(target=process_and_reset_window, daemon=True)
     processor_thread.start()
     
-    # Usa o filtro que acabamos de criar dinamicamente
+5. O processor_thread = threading.Thread(...) é uma nova thread que é criada para executar a função process_and_reset_window. Essa thread é responsável por processar os dados de tráfego em janelas de tempo. O parâmetro **daemon=True** garante que essa thread será encerrada automaticamente quando o programa principal terminar.
+
     capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter=bpf_filter, store=0), daemon=True)
     capture_thread.start()
+
+6. O capture_thread = threading.Thread(...) é outra thread que é criada para a captura de pacotes. A função **sniff**, do Scapy, é usada aqui com três argumentos:
+   6.1 prn=process_packet: A função process_packet será chamada para cada pacote capturado.
+   6.2 filter=bpf_filter: O filtro BPF criado dinamicamente é aplicado para que o Scapy captura apenas os pacotes de interesse, o que economiza recursos.
+   6.3 store=0: Impede que o Scapy armazene os pacotes na memória, o que seria ineficiente para monitoramento contínuo.
 
     print(f"Servidor API rodando! Filtro de captura ativo: [{bpf_filter}]")
     print("-----------------------------------------")
     print(f"Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic")
     print("-----------------------------------------")
     app.run(host="0.0.0.0", port=5000)
+
+7. O app.run(host="0.0.0.0", port=5000) inicia o servidor Flask.
+8. O host="0.0.0.0" faz com que o servidor fique acessível de qualquer IP da rede, não apenas do IP local (127.0.0.1).
+9. A port=5000 define a porta em que o servidor irá rodar.
