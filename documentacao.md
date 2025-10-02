@@ -60,6 +60,36 @@ def process_and_reset_window():
     global traffic_data, last_window_data
     while True:
         time.sleep(JANELA_DE_TEMPO)
+
+1. A função def process_and_reset_window() é executada em um thread separada e é responsável por processar e resetar os dados de tráfego em intervalos regulares, definido pela varável **time.sleep(JANELA_DE_TEMPO)**
+
+        data_to_process = {}
+        with data_lock:
+            if traffic_data:
+                data_to_process = dict(traffic_data)
+                traffic_data.clear()
+
+2. O diciónario global **last_window_data = {}** que foi citado acima, ele é atualizado com os novos dados processados, com a proteção do **with last_window_lock:**
+
+           with last_window_lock:
+            # --- MUDANÇA AQUI para converter os contadores aninhados ---
+            for client, data in data_to_process.items():
+                data['protocols']['in'] = dict(data['protocols']['in'])
+                data['protocols']['out'] = dict(data['protocols']['out'])
+            last_window_data = data_to_process
+
+3. Usando o **with data_lock:**, os dados acumulados em **if traffic_data:** são copiados para o **data_to_process = dict(traffic_data)** e em seguinda o traffic_data é limpo para a próxima janela.
+   3.1 Os dados acumulados são convertidos de objetos **Counter** para o dicionário padrão do Python. É necessário para serem serializados e servidos pela API de forma correta.
+4. A variável with last_window_lock:
+   4.1 **in** ou **out** A direção do tráfego é determinada.
+   4.2 in: entrada e out: saída, o IP do cliente é indentificado com base nessa direção.
+
+# 7. Lógica do processador de janela (modificada para a nova estrutura)
+
+def process_and_reset_window():
+    global traffic_data, last_window_data
+    while True:
+        time.sleep(JANELA_DE_TEMPO)
         
         data_to_process = {}
         with data_lock:
@@ -77,17 +107,6 @@ def process_and_reset_window():
         # Opcional: imprimir no console para depuração
         print(f"[{time.strftime('%H:%M:%S')}] Janela de dados atualizada com {len(last_window_data)} clientes.")
         sys.stdout.flush()
-
-1. A função def process_and_reset_window() é executada em um thread separada e é responsável por processar e resetar os dados de tráfego em intervalos regulares, definido pela varável **time.sleep(JANELA_DE_TEMPO)**
-2. Usando o **with data_lock:**, os dados acumulados em **if traffic_data:** são copiados para o **data_to_process = dict(traffic_data)** e em seguinda o traffic_data é limpo para a próxima janela.
-   2.1 Os dados acumulados são convertidos de objetos **Counter** para o dicionário padrão do Python. É necessário para serem serializados e servidos pela API de forma correta.
-3. O diciónario global **last_window_data = {}** que foi citado acima, ele é atualizado com os novos dados processados, com a proteção do **with last_window_lock:**
-4. A variável with last_window_lock:
-   4.1 **in** ou **out** A direção do tráfego é determinada.
-   4.2 in: entrada e out: saída, o IP do cliente é indentificado com base nessa direção.
-
-
-# 7. Lógica do processador de janela (modificada para a nova estrutura)
 
 
 # 8. Configuração da API com Flask (sem alterações)
