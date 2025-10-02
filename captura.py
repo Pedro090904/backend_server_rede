@@ -10,9 +10,9 @@ import time
 from collections import defaultdict, Counter
 
 # --- Variáveis de Configuração ---
-
-SERVER_IP = "192.168.0.16" # Verifique se este ainda é seu IP
-JANELA_DE_TEMPO = 5 # Segundos
+#172.28.19.201
+SERVER_IP = "172.27.1.186"  # Verifique se este ainda é seu IP
+JANELA_DE_TEMPO = 10 # Segundos
 
 # --- ESTRUTURA DE DADOS MODIFICADA ---
 # A lambda agora cria uma estrutura aninhada para os protocolos
@@ -90,17 +90,47 @@ def get_traffic_data():
         # Retorna uma cópia dos dados da última janela como resposta JSON
         return jsonify(last_window_data)
 
-# --- Início da Execução (sem alterações) ---
+# --- Início da Execução (sem alterações)
+
 if __name__ == "__main__":
-    print("Iniciando o servidor de captura e API (v3 - com portas)...")
+    
+    # --- LÓGICA CORINGA PARA CRIAR O FILTRO ---
+    ports_to_monitor = []
+    # sys.argv é a lista de argumentos passados na linha de comando
+    if "--ports" in sys.argv:
+        try:
+            # Pega o valor que vem depois de "--ports"
+            ports_arg_index = sys.argv.index("--ports") + 1
+            ports_str = sys.argv[ports_arg_index]
+            
+            if ports_str.lower() != "all":
+                # Converte a string "80,21,20" em uma lista ['80', '21', '20']
+                ports_to_monitor = ports_str.split(',')
+        except (ValueError, IndexError):
+            print("AVISO: Argumento --ports usado incorretamente. Monitorando todas as portas.")
+            ports_to_monitor = []
+
+    # Constrói o filtro BPF com base nos argumentos
+    if ports_to_monitor:
+        # Se temos portas, cria o filtro específico
+        port_filter_part = " or ".join([f"port {p.strip()}" for p in ports_to_monitor])
+        bpf_filter = f"host {SERVER_IP} and ({port_filter_part})"
+    else:
+        # Se não temos portas, cria o filtro geral (apenas pelo IP)
+        bpf_filter = f"host {SERVER_IP}"
+    # --- FIM DA LÓGICA CORINGA ---
+
+    print("Iniciando o servidor de captura e API (v5 - filtro dinâmico)...")
     
     processor_thread = threading.Thread(target=process_and_reset_window, daemon=True)
     processor_thread.start()
     
-    capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter="ip", store=0), daemon=True)
+    # Usa o filtro que acabamos de criar dinamicamente
+    capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter=bpf_filter, store=0), daemon=True)
     capture_thread.start()
 
+    print(f"Servidor API rodando! Filtro de captura ativo: [{bpf_filter}]")
+    print("-----------------------------------------")
     print(f"Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic")
     print("-----------------------------------------")
-    
     app.run(host="0.0.0.0", port=5000)
