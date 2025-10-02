@@ -3,6 +3,7 @@
 # 1. Frameworks importados relacionadas as API's
 
 ```from flask import Flask, jsonify```
+
 ```from flask_cors import CORS``` # Para permitir que o frontend acesse a API
 
 1. Flask é a Api que cria o servidor web
@@ -12,9 +13,13 @@
 # 2. Bibliotecas importadas
 
 ```from scapy.all import sniff, IP, TCP, UDP``` # <-- MUDANÇA AQUI
+
 ```import sys```
+
 ```import threading```
+
 ```import time```
+
 ```from collections import defaultdict, Counter```
 
 1. Scapy analisa e manipula pacotes de redes.
@@ -29,6 +34,7 @@
 
 # 3. Variáveis de configuração 
 ```SERVER_IP = "192.168.1.201"``` # Verifique se este ainda é seu IP
+
 ```JANELA_DE_TEMPO = 5 # Segundos```
 
 - A variável SERVER_IP define o endereço IP do servidor que o script vai monitorar ou usar como origem, caso o ip seja diferente do verificado, é preciso atualizar a variável
@@ -37,6 +43,7 @@
 # 4. Estrutura de dados 
 
 ```traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': {'in': Counter(), 'out': Counter()}})``` # <-- MUDANÇA AQUI
+
 ```data_lock = threading.Lock()```
 
 1. A variável traffic_data cria um dicionário com um valor pré-definido pela função lambda, ela se refere ao ip monitorado
@@ -47,6 +54,7 @@
 # 5. Dicionário para armazenar os dados
 
 ```last_window_data = {}```
+
 ```last_window_lock = threading.Lock()```
 
 1. A variável last_window_data = {} é um dicionário global que armazena os dados de tráfego processados da última janela completa e é o **endponit da API que serve para o frontend**
