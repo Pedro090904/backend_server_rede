@@ -124,7 +124,7 @@ def get_traffic_data():
 
 1. if "--ports" in sys.argv é o script qu verifica o argumento **--ports**
 
-```ssssss```
+```python     if "--ports" in sys.argv:```
 
 
     if ports_to_monitor:
