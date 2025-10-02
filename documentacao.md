@@ -44,5 +44,17 @@ data_lock = threading.Lock()
    1.2  A chave "out" do dicionário se refere aos dados de saída
 2. A variável data_lock faz com que o tráfego sendo atualizado muitas vezes, garante que apenas uma thread por vez mexa na estrutura, evitando inconsistências.
 
-#
+# 5. Dicionário para armazenar os dados da ÚLTIMA janela completa, para a API servir
+last_window_data = {}
+last_window_lock = threading.Lock()
 
+# 6. Lógica de captura atualiza com direção e portas
+
+
+# 7. Lógica do processador de janela (modificada para a nova estrutura)
+
+
+# 8. Configuração da API com Flask (sem alterações)
+
+
+# 9. Início da Execução (sem alterações)
