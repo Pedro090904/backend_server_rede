@@ -98,27 +98,55 @@ def process_and_reset_window():
 @app.route('/api/traffic')
 def get_traffic_data():
     """Este é o endpoint da nossa API."""
-
-1. A função get_traffic_data() é o endpoint da API responsável por fornecer os dados de tráfego de rede para o frontend do dashboard.
-
     with last_window_lock:
         # Retorna uma cópia dos dados da última janela como resposta JSON
         return jsonify(last_window_data)
 
+1. A função get_traffic_data() é o endpoint da API responsável por fornecer os dados de tráfego de rede para o frontend do dashboard.
 2. A variável **with last_window_lock:** evita que a função de processamento de janela tente escrever na variável enquanto esta função a está lendo, prevenindo erros ou dados inconsistentes.
 
 # 9. Início da Execução (sem alterações)
+    
+    ports_to_monitor = []
+    # sys.argv é a lista de argumentos passados na linha de comando
+    if "--ports" in sys.argv:
+        try:
+            # Pega o valor que vem depois de "--ports"
+            ports_arg_index = sys.argv.index("--ports") + 1
+            ports_str = sys.argv[ports_arg_index]
+            
+            if ports_str.lower() != "all":
+                # Converte a string "80,21,20" em uma lista ['80', '21', '20']
+                ports_to_monitor = ports_str.split(',')
+        except (ValueError, IndexError):
+            print("AVISO: Argumento --ports usado incorretamente. Monitorando todas as portas.")
+            ports_to_monitor = []
 
-if __name__ == "__main__":
-    print("Iniciando o servidor de captura e API (v3 - com portas)...")
+1. if "--ports" in sys.argv é o script qu verifica o argumento **--ports**
+
+```ssssss```
+
+
+    if ports_to_monitor:
+        # Se temos portas, cria o filtro específico
+        port_filter_part = " or ".join([f"port {p.strip()}" for p in ports_to_monitor])
+        bpf_filter = f"host {SERVER_IP} and ({port_filter_part})"
+    else:
+        # Se não temos portas, cria o filtro geral (apenas pelo IP)
+        bpf_filter = f"host {SERVER_IP}"
+    # --- FIM DA LÓGICA CORINGA ---
+
+    print("Iniciando o servidor de captura e API (v5 - filtro dinâmico)...")
     
     processor_thread = threading.Thread(target=process_and_reset_window, daemon=True)
     processor_thread.start()
     
-    capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter="ip", store=0), daemon=True)
+    # Usa o filtro que acabamos de criar dinamicamente
+    capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter=bpf_filter, store=0), daemon=True)
     capture_thread.start()
 
+    print(f"Servidor API rodando! Filtro de captura ativo: [{bpf_filter}]")
+    print("-----------------------------------------")
     print(f"Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic")
     print("-----------------------------------------")
-    
     app.run(host="0.0.0.0", port=5000)
