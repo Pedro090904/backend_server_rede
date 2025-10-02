@@ -56,6 +56,10 @@ last_window_lock = threading.Lock()
 
 # 6. Lógica de captura atualiza com direção e portas
 
+
+
+# 7. Lógica do processador de janela (modificada para a nova estrutura)
+
 def process_and_reset_window():
     global traffic_data, last_window_data
     while True:
@@ -88,10 +92,6 @@ def process_and_reset_window():
         sys.stdout.flush()
         
 5. Apartir da linha **print(f"[{time.strftime('%H:%M:%S')}]...)** até a **sys.stdout.flush()**, são usadas para fins de depuração. Exibindo no console a quantidade de clientes encontrados na janela de tempo processada, permitindo que o desenvolvedor monitore o funcionamento do sistema em tempo real.
-
-# 7. Lógica do processador de janela (modificada para a nova estrutura)
-
-
 
 # 8. Configuração da API com Flask (sem alterações)
 
