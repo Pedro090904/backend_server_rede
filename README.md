@@ -1,10 +1,9 @@
 
-
 # Backend - Dashboard de Análise de Tráfego
 
 Este diretório contém o código-fonte do backend para o projeto "Dashboard de Análise de Tráfego de Servidor em Tempo Real".
 
-O objetivo deste backend é capturar pacotes de rede de um servidor-alvo, agregar os dados de tráfego em janelas de 5 segundos e expor essas informações através de uma API RESTful para ser consumida por um frontend. [cite\_start]Este documento fornece as instruções detalhadas de configuração e execução, conforme solicitado nos entregáveis do projeto[cite: 23].
+O objetivo deste backend é capturar pacotes de rede de um servidor-alvo, agregar os dados de tráfego em janelas de tempo configuráveis e expor essas informações através de uma API RESTful para ser consumida por um frontend. Este documento fornece as instruções detalhadas de configuração e execução.
 
 ## 1\. Pré-requisitos
 
@@ -23,76 +22,89 @@ Antes de começar, garanta que você tenha os seguintes softwares instalados no 
 
 ## 2\. Configuração
 
-Antes de rodar o servidor, você precisa configurar o script para monitorar a interface de rede correta.
+O script `captura.py` possui duas variáveis principais no topo do arquivo que podem ser ajustadas conforme a necessidade.
 
-1.  **Descubra o seu Endereço IP Local:**
+1.  **Atualize o Endereço IP do Servidor-Alvo:**
 
-      * Abra o Prompt de Comando (`cmd`).
-      * Digite o comando `ipconfig` e pressione Enter.
-      * Procure pelo seu adaptador de rede ativo (ex: "Adaptador de LAN sem Fio Wi-Fi") e anote o valor do **"Endereço IPv4"** (ex: `192.168.0.14`).
-
-2.  **Atualize o Script:**
-
-      * Abra o arquivo `captura.py` em um editor de texto como o VS Code.
-      * Localize a linha que define a variável `SERVER_IP`.
-      * Substitua o valor existente pelo endereço IP que você anotou no passo anterior.
+      * Abra o Prompt de Comando (`cmd`) e digite `ipconfig` para descobrir o seu endereço IPv4 atual (ex: `192.168.0.14`).
+      * Abra o arquivo `captura.py` e altere a variável `SERVER_IP` para o seu endereço IP.
 
     <!-- end list -->
 
     ```python
-    # Linha a ser alterada no arquivo captura.py
+    # Define o endereço IP da máquina que será monitorada.
     SERVER_IP = "SEU_IP_AQUI" 
     ```
 
-## 3\. Instalação das Dependências
+2.  **(Opcional) Ajuste a Janela de Tempo:**
 
-Com os pré-requisitos instalados e o script configurado, o próximo passo é instalar as bibliotecas Python necessárias para o projeto.
-
-1.  **Abra o Prompt de Comando como Administrador:**
-
-      * Clique no Menu Iniciar do Windows.
-      * Digite `cmd`.
-      * Clique com o botão direito sobre o "Prompt de Comando" e selecione **"Executar como administrador"**.
-
-2.  **Navegue até a Pasta do Projeto:**
-
-      * Use o comando `cd` (change directory) para entrar na pasta onde o arquivo `captura.py` está localizado.
-      * *Exemplo:* `cd C:\Users\SeuUsuario\Documentos\GitHub\meu_dashboard\backend`
-
-3.  **Instale as Bibliotecas:**
-
-      * Com o terminal na pasta correta, execute o seguinte comando para instalar Flask, Flask-Cors e Scapy:
+      * A variável `JANELA_DE_TEMPO` define o intervalo em segundos para a agregação dos dados. O padrão é 5 segundos, conforme solicitado no trabalho.
 
     <!-- end list -->
 
+    ```python
+    # Define o intervalo de agregação dos dados em segundos.
+    JANELA_DE_TEMPO = 5
+    ```
+
+## 3\. Instalação
+
+Antes da primeira execução, é necessário instalar as bibliotecas Python que o projeto utiliza.
+
+1.  **Abra o Prompt de Comando como Administrador.**
+2.  Use o comando `cd` para **navegar até a pasta do projeto backend**.
+      * *Exemplo:* `cd C:\Users\SeuUsuario\Documentos\GitHub\meu_dashboard\backend`
+3.  Execute o seguinte comando para instalar todas as dependências:
     ```cmd
     pip install Flask Flask-Cors scapy
     ```
 
 ## 4\. Execução
 
-Depois de instalar as dependências, o backend está pronto para ser executado.
+O script deve ser executado com privilégios de administrador para que possa capturar o tráfego de rede. Ele possui dois modos de operação: um modo padrão que monitora todo o tráfego e um modo com filtro para monitorar portas específicas.
 
-1.  Certifique-se de que você ainda está no **Prompt de Comando como Administrador** e dentro da pasta do projeto.
-2.  Execute o script com o seguinte comando:
+### 4.1. Passo a Passo para Executar
+
+1.  **Abra o Prompt de Comando como Administrador:**
+
+      * Clique no Menu Iniciar do Windows, digite `cmd`, clique com o botão direito sobre o "Prompt de Comando" e selecione "Executar como administrador".
+
+2.  **Navegue até a Pasta do Projeto:**
+
+      * Use o comando `cd` para entrar na pasta onde o arquivo `captura.py` está localizado, como no passo de instalação.
+
+### 4.2. Modos de Execução
+
+#### Modo 1: Monitoramento Completo (Sem Filtro)
+
+Neste modo, o script captura **todo** o tráfego de rede de e para o `SERVER_IP` configurado. É útil para uma análise geral ou para descobrir quais serviços estão ativos.
+
+  * **Comando:**
     ```cmd
     python captura.py
     ```
-3.  Se tudo ocorrer bem, você verá mensagens indicando que o servidor foi iniciado e está rodando. O terminal ficará ativo, executando o servidor.
+
+#### Modo 2: Monitoramento com Filtro de Portas
+
+Neste modo, você pode especificar exatamente quais portas de serviço deseja monitorar, isolando o tráfego de aplicações específicas e ignorando todo o "ruído" restante.
+
+  * **Comando:**
+    ```cmd
+    python captura.py --ports PORTA1,PORTA2,PORTA3
     ```
-    Iniciando o servidor de captura e API...
-    Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic
-    -----------------------------------------
-    [23:55:10] Janela de dados atualizada com 2 clientes.
-    [23:55:15] Janela de dados atualizada com 3 clientes.
-    ```
+  * **Como usar:**
+      * Use o argumento `--ports` seguido de uma lista de números de porta, separados por vírgula, **sem espaços**.
+      * **Exemplo Prático:** Para monitorar apenas seus servidores de teste HTTP (porta 80 do IIS) e FTP (portas 21 e 20), o comando seria:
+        ```cmd
+        python captura.py --ports 80,21,20
+        ```
+
+Ao iniciar, o script informará qual filtro está ativo. Se nenhum filtro for especificado, ele monitorará o `host` como um todo.
 
 ## 5\. Verificação
 
-Para confirmar que a API está funcionando e servindo os dados corretamente:
+Para confirmar que o backend está funcionando:
 
-1.  Mantenha o terminal do passo anterior rodando.
-2.  Abra um navegador de internet (Chrome, Firefox, etc.).
-3.  Acesse a seguinte URL: **`http://127.0.0.1:5000/api/traffic`**
-
-Você deverá ver os dados de tráfego agregados, formatados em JSON, aparecendo na página. A cada 5 segundos que você atualizar a página, os dados devem mudar, refletindo a última janela de tempo capturada.
+1.  O terminal onde o script está rodando deve exibir mensagens como `[HH:MM:SS] Janela de dados atualizada com X clientes.` a cada 5 segundos.
+2.  Abra um navegador de internet e acesse a URL da API: **`http://127.0.0.1:5000/api/traffic`**.
+3.  Você deverá ver os dados de tráfego em formato JSON, que serão consumidos pelo frontend.
