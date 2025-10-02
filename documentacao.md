@@ -44,9 +44,15 @@ data_lock = threading.Lock()
    1.2  A chave "out" do dicionário se refere aos dados de saída
 2. A variável data_lock faz com que o tráfego sendo atualizado muitas vezes, garante que apenas uma thread por vez mexa na estrutura, evitando inconsistências.
 
-# 5. Dicionário para armazenar os dados da ÚLTIMA janela completa, para a API servir
+# 5. Dicionário para armazenar os dados
+
 last_window_data = {}
 last_window_lock = threading.Lock()
+
+1. A variável last_window_data = {} é um dicionário global que armazena os dados de tráfego processados da última janela completa e é o **endponit da API que serve para o frontend**
+2. A variável last_window_lock = threading.Lock()
+   2.1 O **threading.Lock()** garante que apenas uma thread por vez pode acessar ou modificar o last
+
 
 # 6. Lógica de captura atualiza com direção e portas
 
