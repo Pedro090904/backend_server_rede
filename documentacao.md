@@ -95,6 +95,30 @@ def process_and_reset_window():
 
 # 8. Configuração da API com Flask (sem alterações)
 
+@app.route('/api/traffic')
+def get_traffic_data():
+    """Este é o endpoint da nossa API."""
 
+1. A função get_traffic_data() é o endpoint da API responsável por fornecer os dados de tráfego de rede para o frontend do dashboard.
+
+    with last_window_lock:
+        # Retorna uma cópia dos dados da última janela como resposta JSON
+        return jsonify(last_window_data)
+
+2. A variável **with last_window_lock:** evita que a função de processamento de janela tente escrever na variável enquanto esta função a está lendo, prevenindo erros ou dados inconsistentes.
 
 # 9. Início da Execução (sem alterações)
+
+if __name__ == "__main__":
+    print("Iniciando o servidor de captura e API (v3 - com portas)...")
+    
+    processor_thread = threading.Thread(target=process_and_reset_window, daemon=True)
+    processor_thread.start()
+    
+    capture_thread = threading.Thread(target=lambda: sniff(prn=process_packet, filter="ip", store=0), daemon=True)
+    capture_thread.start()
+
+    print(f"Servidor API rodando! Acesse http://127.0.0.1:5000/api/traffic")
+    print("-----------------------------------------")
+    
+    app.run(host="0.0.0.0", port=5000)
