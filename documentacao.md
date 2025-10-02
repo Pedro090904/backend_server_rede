@@ -61,7 +61,7 @@ def process_and_reset_window():
     while True:
         time.sleep(JANELA_DE_TEMPO)
 
-1. A função def process_and_reset_window() é executada em um thread separada e é responsável por processar e resetar os dados de tráfego em intervalos regulares, definido pela varável **time.sleep(JANELA_DE_TEMPO)**
+1. A função process_and_reset_window() é executada em um thread separada e é responsável por processar e resetar os dados de tráfego em intervalos regulares, definido pela varável **time.sleep(JANELA_DE_TEMPO)**
 
         data_to_process = {}
         with data_lock:
@@ -84,32 +84,17 @@ def process_and_reset_window():
    4.1 **in** ou **out** A direção do tráfego é determinada.
    4.2 in: entrada e out: saída, o IP do cliente é indentificado com base nessa direção.
 
-# 7. Lógica do processador de janela (modificada para a nova estrutura)
-
-def process_and_reset_window():
-    global traffic_data, last_window_data
-    while True:
-        time.sleep(JANELA_DE_TEMPO)
-        
-        data_to_process = {}
-        with data_lock:
-            if traffic_data:
-                data_to_process = dict(traffic_data)
-                traffic_data.clear()
-
-        with last_window_lock:
-            # --- MUDANÇA AQUI para converter os contadores aninhados ---
-            for client, data in data_to_process.items():
-                data['protocols']['in'] = dict(data['protocols']['in'])
-                data['protocols']['out'] = dict(data['protocols']['out'])
-            last_window_data = data_to_process
-
-        # Opcional: imprimir no console para depuração
         print(f"[{time.strftime('%H:%M:%S')}] Janela de dados atualizada com {len(last_window_data)} clientes.")
         sys.stdout.flush()
+        
+5. Apartir da linha **print(f"[{time.strftime('%H:%M:%S')}]...)** até a **sys.stdout.flush()**, são usadas para fins de depuração. Exibindo no console a quantidade de clientes encontrados na janela de tempo processada, permitindo que o desenvolvedor monitore o funcionamento do sistema em tempo real.
+
+# 7. Lógica do processador de janela (modificada para a nova estrutura)
+
 
 
 # 8. Configuração da API com Flask (sem alterações)
+
 
 
 # 9. Início da Execução (sem alterações)
