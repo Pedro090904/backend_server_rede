@@ -2,8 +2,8 @@
 
 # 1. Frameworks importados relacionadas as API's
 
-from flask import Flask, jsonify 
-from flask_cors import CORS # Para permitir que o frontend acesse a API
+```from flask import Flask, jsonify```
+```from flask_cors import CORS``` # Para permitir que o frontend acesse a API
 
 1. Flask é a Api que cria o servidor web
 2. jsonify converte os dados em python para JSON
@@ -11,11 +11,11 @@ from flask_cors import CORS # Para permitir que o frontend acesse a API
 
 # 2. Bibliotecas importadas
 
-from scapy.all import sniff, IP, TCP, UDP # <-- MUDANÇA AQUI
-import sys
-import threading
-import time
-from collections import defaultdict, Counter
+```from scapy.all import sniff, IP, TCP, UDP``` # <-- MUDANÇA AQUI
+```import sys```
+```import threading```
+```import time```
+```from collections import defaultdict, Counter```
 
 1. Scapy analisa e manipula pacotes de redes.
    1.1 Sniff captura pacotes em tempo real
@@ -28,16 +28,16 @@ from collections import defaultdict, Counter
    5.2 Counter conta e armazena os elementos
 
 # 3. Variáveis de configuração 
-SERVER_IP = "192.168.1.201" # Verifique se este ainda é seu IP
-JANELA_DE_TEMPO = 5 # Segundos
+```SERVER_IP = "192.168.1.201"``` # Verifique se este ainda é seu IP
+```JANELA_DE_TEMPO = 5 # Segundos```
 
 - A variável SERVER_IP define o endereço IP do servidor que o script vai monitorar ou usar como origem, caso o ip seja diferente do verificado, é preciso atualizar a variável
 - A variável JANELA_DE_TEMPO define o intervalo para coletar as estatísticas e agrupar pacotes  
 
 # 4. Estrutura de dados 
 
-traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': {'in': Counter(), 'out': Counter()}}) # <-- MUDANÇA AQUI
-data_lock = threading.Lock()
+```traffic_data = defaultdict(lambda: {'in': 0, 'out': 0, 'protocols': {'in': Counter(), 'out': Counter()}})``` # <-- MUDANÇA AQUI
+```data_lock = threading.Lock()```
 
 1. A variável traffic_data cria um dicionário com um valor pré-definido pela função lambda, ela se refere ao ip monitorado
    1.1  A chave "in" do dicionário se refere aos dados de entrada
@@ -46,8 +46,8 @@ data_lock = threading.Lock()
 
 # 5. Dicionário para armazenar os dados
 
-last_window_data = {}
-last_window_lock = threading.Lock()
+```last_window_data = {}```
+```last_window_lock = threading.Lock()```
 
 1. A variável last_window_data = {} é um dicionário global que armazena os dados de tráfego processados da última janela completa e é o **endponit da API que serve para o frontend**
 2. A variável last_window_lock = threading.Lock() 
@@ -124,7 +124,7 @@ def get_traffic_data():
 
 1. if "--ports" in sys.argv é o script qu verifica o argumento **--ports**
 
-```python     if "--ports" in sys.argv:```
+``` ```
 
 
     if ports_to_monitor:
